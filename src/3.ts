@@ -1011,11 +1011,11 @@ const gammaCount = table.reduce(
   (acc, row) => acc.map((e, i) => e + row[i]),
   Array<number>(12).fill(0)
 );
-const ratios = gammaCount.map((e) => e / table.length);
 const gammas = gammaCount.map((e) => (e / table.length > 0.5 ? 1 : 0));
 const gamma = parseInt(gammas.join(""), 2);
 const epsilons = gammaCount.map((e) => (e / table.length > 0.5 ? 0 : 1));
 const epsilon = parseInt(epsilons.join(""), 2);
+console.log("Day 3 part 1", epsilon * gamma);
 
 const getMinOrMax = (
   table: number[][],
@@ -1035,4 +1035,4 @@ const getMinOrMax = (
 };
 const o2 = parseInt(getMinOrMax(table, true).join(""), 2);
 const co2 = parseInt(getMinOrMax(table, false).join(""), 2);
-console.log("Day 3 Part 2:", o2 * co2);
+console.log("Day 3 Part 2", o2 * co2);
