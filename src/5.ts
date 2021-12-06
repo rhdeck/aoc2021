@@ -524,12 +524,12 @@ lines
   .filter((line) => !orthagonalLines.includes(line))
   .forEach(([[ax, ay], [bx, by]]) => {
     if ((ax > bx && ay > by) || (ax < bx && ay < by))
-      //"backslash"
+      // Backslash: \
       for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) {
         let y = Math.min(ay, by) + (x - Math.min(ax, bx));
         coveredPoints[x][y]++;
       }
-    // Forward slash
+    // Forward slash: /
     else
       for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) {
         let y = Math.max(ay, by) - (x - Math.min(ax, bx));
