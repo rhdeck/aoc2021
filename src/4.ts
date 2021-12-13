@@ -1,3 +1,22 @@
+const example4 = `7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
+
+22 13 17 11  0
+ 8  2 23  4 24
+21  9 14 16  7
+ 6 10  3 18  5
+ 1 12 20 15 19
+
+ 3 15  0  2 22
+ 9 18 13 17  5
+19  8  7 25 23
+20 11 10 24  4
+14 21 16 12  6
+
+14 21 17 24  4
+10 16 15  9 19
+18  8 23 26 20
+22 11 13  6  5
+ 2  0 12  3  7`;
 const data4 = `74,79,46,2,19,27,31,90,21,83,94,77,0,29,38,72,42,23,6,62,45,95,41,55,93,69,39,17,12,1,20,53,49,71,61,13,88,25,87,26,50,58,28,51,89,64,3,80,36,65,57,92,52,86,98,78,9,33,44,63,16,34,97,60,40,66,75,4,7,84,22,43,11,85,91,32,48,14,18,76,8,47,24,81,35,30,82,67,37,70,15,5,73,59,54,68,56,96,99,10
 
 61 96 92 39  0
@@ -615,112 +634,87 @@ const boards = boardsRaw.map((b) =>
 //#region Winning boards are rows, columns and diagonals
 const winningRows = new Array<number>(5)
   .fill(0)
-  .map((n, i, arr) => [
-    ...new Array<number[]>(i).fill([-1, -1, -1, -1, -1]),
+  .map((_, i, arr) => [
+    ...new Array<number[]>(i).fill([0, 0, 0, 0, 0]),
     [1, 1, 1, 1, 1],
-    ...new Array<number[]>(arr.length - i - 1).fill([-1, -1, -1, -1, -1]),
+    ...new Array<number[]>(arr.length - i - 1).fill([0, 0, 0, 0, 0]),
   ]);
 const winningCols = new Array<number>(5)
   .fill(0)
-  .map((n, i, arr) => arr.map(() => arr.map((_, j) => (j === i ? 1 : -1))));
+  .map((_, i, arr) => arr.map(() => arr.map((_, j) => (j === i ? 1 : 0))));
 const winningDiagSlash = new Array<number>(5)
   .fill(0)
-  .map((_, r, arr) => arr.map((_, c) => (r === c ? 1 : -1)));
+  .map((_, r, arr) => arr.map((_, c) => (r === c ? 1 : 0)));
 const winningDiagBackSlash = new Array<number>(5)
   .fill(0)
-  .map((_, r, arr) => arr.map((_, c) => (c + r === arr.length - 1 ? 1 : -1)));
+  .map((_, r, arr) => arr.map((_, c) => (c + r === arr.length - 1 ? 1 : 0)));
 const winningGrids = [
   ...winningRows,
   ...winningCols,
-  winningDiagSlash,
-  winningDiagBackSlash,
+  // Don't cross me, fellas
+  // winningDiagSlash,
+  // winningDiagBackSlash,
 ];
 //#endregion
-const getBoardScore = (board: number[][]) =>
-  parseInt(
-    board.map((r) => r.map((n) => (n > -1 ? 1 : 0)).join("")).join(""),
-    2
-  );
-const winningBoards = winningGrids.map(getBoardScore);
+const filterBoard = (board: number[][], reads: number[]) =>
+  board.map((row) => row.map((c) => (reads.includes(c) ? c : -1)));
+const antiFilterBoard = (board: number[][], reads: number[]) =>
+  board.map((row) => row.map((c) => (!reads.includes(c) ? c : -1)));
 const didBoardWin = (board: number[][], reads: number[]) => {
-  const newBoard = board.map((row) =>
-    row.map((c) => (reads.includes(c) ? c : -1))
-  );
-  const boardScore = getBoardScore(newBoard);
-  if (!boardScore) return 0;
-  const matchingBoardIndex = winningBoards.findIndex(
-    (b) => (b & boardScore) === b
-  );
-  if (matchingBoardIndex === -1) return 0;
-  if (matchingBoardIndex > 9)
-    console.log(
-      "I have a good board that matches",
-      newBoard,
-      matchingBoardIndex
-    );
-  return board
-    .map((row) => row.map((c) => (reads.includes(c) ? 0 : c)))
+  const matchingBoardIndex = matchingIndex(board, reads);
+  const isWinner = matchingBoardIndex > -1;
+  return isWinner;
+};
+const matchingIndex = (board: number[][], reads: number[]) => {
+  const newBoard = filterBoard(board, reads);
+  return winningGrids.findIndex((grid) => {
+    const isWinner =
+      grid.reduce(
+        (a, row, rowIndex) =>
+          a +
+          row.reduce(
+            (a, cell, colIndex) =>
+              a + (cell !== 0 && newBoard[rowIndex][colIndex] !== -1 ? 1 : 0),
+            0
+          ),
+        0
+      ) === 5;
+    return isWinner;
+  });
+};
+const boardScore = (board: number[][], reads: number[]) =>
+  antiFilterBoard(board, reads)
     .flat()
+    .filter((c) => c !== -1)
     .reduce((a, b) => a + b, 0);
-};
-let winningScore: number = 0;
-let last = 0;
-reads.find((_, i, arr) => {
-  const current = arr.slice(0, i);
-  boards.find((board) => {
-    const result = didBoardWin(board, current);
-    winningScore = result;
-    return result;
-  });
-  last = current.pop() || 0;
-  return winningScore;
-});
-console.log("Part 1 Answer:", winningScore * last);
-
-const findWinningBoardIndex = (boards: number[][][]) => {
-  console.log("Starting findWinningBoardIndex", boards.length);
-  let boardIndex: number = -1;
+let winningBoard: number[][] = [];
+const lastRead =
   reads.find((_, i, arr) => {
-    const current = arr.slice(0, i);
-    boardIndex = boards.findIndex((board, index) => {
-      const result = didBoardWin(board, current);
-      return result;
-    });
-    if (boardIndex !== -1) {
-      console.log(
-        "Setting boardindex to ",
-        boardIndex,
-        current.length,
-        current[current.length - 1]
-      );
-    }
-    return boardIndex !== -1;
-  });
-  return boardIndex;
-};
-let tempBoards = [...boards];
-while (tempBoards.length > 1) {
-  const winningBoardIndex = findWinningBoardIndex(tempBoards);
-  console.log("Removing board", tempBoards[winningBoardIndex]);
-  tempBoards.splice(winningBoardIndex, 1);
-  console.log("and my length is ", tempBoards.length, winningBoardIndex);
-}
-console.log("I am now convinced the last board is", tempBoards[0]);
-reads.find((_, i, arr) => {
-  const current = arr.slice(0, i);
-  tempBoards.find((board) => {
-    const result = didBoardWin(board, current);
-    winningScore = result;
+    const current = arr.slice(0, i + 1);
+    winningBoard = boards.find((board) => didBoardWin(board, current)) || [];
+    return !!winningBoard.length;
+  }) || 0;
+const newReads = reads.slice(0, reads.indexOf(lastRead) + 1);
+console.log(
+  "Part 1 Answer:",
+  boardScore(winningBoard, reads.slice(0, reads.indexOf(lastRead) + 1)) *
+    lastRead
+);
+//Keep playing until I run out of boards
+let playingBoards = [...boards];
+let winningBoards: number[][][] = [];
+const lastRead2 =
+  reads.find((n, i, arr) => {
+    const current = arr.slice(0, i + 1);
+    winningBoards = playingBoards.filter((board) =>
+      didBoardWin(board, current)
+    );
+    playingBoards = playingBoards.filter(
+      (board) => !winningBoards.includes(board)
+    );
+    return !playingBoards.length;
+  }) || 0;
+const reads2 = reads.slice(0, reads.indexOf(lastRead2) + 1);
+console.log("Part 2 Answer:", boardScore(winningBoards[0], reads2) * lastRead2);
 
-    return result;
-  });
-  if (winningScore) {
-    console.log("my last board is", winningScore);
-    console.log("last read is", current.length, current);
-  }
-  last = current.pop() || 0;
-  return winningScore;
-});
-console.log("Part 2 Answer:", winningScore * last);
-
-/** */
+//last number is 47
