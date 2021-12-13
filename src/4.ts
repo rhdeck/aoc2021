@@ -651,20 +651,24 @@ const winningDiagBackSlash = new Array<number>(5)
 const winningGrids = [
   ...winningRows,
   ...winningCols,
-  winningDiagSlash,
-  winningDiagBackSlash,
+  // Don't cross me, fellas
+  // winningDiagSlash,
+  // winningDiagBackSlash,
 ];
 //#endregion
 const filterBoard = (board: number[][], reads: number[]) =>
   board.map((row) => row.map((c) => (reads.includes(c) ? c : -1)));
 const antiFilterBoard = (board: number[][], reads: number[]) =>
   board.map((row) => row.map((c) => (!reads.includes(c) ? c : -1)));
-const didBoardWin = (board: number[][], reads: number[]) =>
-  matchingIndex(board, reads) > -1;
+const didBoardWin = (board: number[][], reads: number[]) => {
+  const matchingBoardIndex = matchingIndex(board, reads);
+  const isWinner = matchingBoardIndex > -1;
+  return isWinner;
+};
 const matchingIndex = (board: number[][], reads: number[]) => {
   const newBoard = filterBoard(board, reads);
-  return winningGrids.findIndex(
-    (grid) =>
+  return winningGrids.findIndex((grid) => {
+    const isWinner =
       grid.reduce(
         (a, row, rowIndex) =>
           a +
@@ -674,8 +678,9 @@ const matchingIndex = (board: number[][], reads: number[]) => {
             0
           ),
         0
-      ) === 5
-  );
+      ) === 5;
+    return isWinner;
+  });
 };
 const boardScore = (board: number[][], reads: number[]) =>
   antiFilterBoard(board, reads)
@@ -699,7 +704,7 @@ console.log(
 let playingBoards = [...boards];
 let winningBoards: number[][][] = [];
 const lastRead2 =
-  reads.find((_, i, arr) => {
+  reads.find((n, i, arr) => {
     const current = arr.slice(0, i + 1);
     winningBoards = playingBoards.filter((board) =>
       didBoardWin(board, current)
@@ -710,28 +715,6 @@ const lastRead2 =
     return !playingBoards.length;
   }) || 0;
 const reads2 = reads.slice(0, reads.indexOf(lastRead2) + 1);
+console.log("Part 2 Answer:", boardScore(winningBoards[0], reads2) * lastRead2);
 
-const boardLengths = boards.map((board) =>
-  reads.findIndex((_, i, arr) => {
-    const current = arr.slice(0, i + 1);
-    console.log("testing with current length", current.length);
-    return didBoardWin(board, current);
-  })
-);
-console.log(boardLengths);
-console.log("Hi, this was my winningBoards", winningBoards);
-console.log(
-  "And the filtered version is ",
-  filterBoard(winningBoards[0], reads2)
-);
-console.log(
-  "And the antifiltered version is",
-  antiFilterBoard(winningBoards[0], reads2)
-);
-console.log("With reads2 of", reads2);
-console.log("length of reads2 is", reads2.length);
-console.log("index of winningboard is", boards.indexOf(winningBoards[0]));
-console.log(
-  "At the end, I had",
-  boardScore(winningBoards[0], reads2) * lastRead2
-);
+//last number is 47
